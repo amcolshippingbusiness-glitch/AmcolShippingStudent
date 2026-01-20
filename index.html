@@ -453,8 +453,8 @@
       isAdminUser = !!isAdmin;
 
       localStorage.setItem(LS_TOKEN, token);
-      localStorage.setItem(LS_USER, JSON.stringify(user));
-      localStorage.setItem(LS_ADMIN, String(!!isAdmin));
+localStorage.setItem(LS_USER, JSON.stringify(user));
+localStorage.setItem(LS_ADMIN, String(!!isAdmin));
     }
 
     function clearAuthStorage() {
@@ -503,7 +503,7 @@
       async create(record) {
         const res = await this._call("create", { record });
         // ถ้าเป็น booking แล้วสำเร็จ -> refresh
-        if (res && res.isOk && AUTH_TOKEN && record && record.record_type !== "user") {
+        if (res && res.isOk && AUTH_TOKEN && record && record.record_type === "booking") {
   await this._refresh();
 }
         return res;
@@ -993,9 +993,12 @@
 
   currentView = "booking_detail";
 
-  const b =
-    allRecords.find(r => r && r.record_type === "booking" && String(r.__backendId) === String(bookingData.__backendId))
-    || bookingData;
+  const b = allRecords.find(r => 
+  r && 
+  r.record_type === "booking" && 
+  r.__backendId && 
+  String(r.__backendId) === String(bookingData.__backendId)
+) || bookingData;
 
   bookingData = b;
       const resultText = {
@@ -1365,8 +1368,12 @@
       document.querySelectorAll(".admin-edit-btn").forEach(btn => {
         btn.addEventListener("click", (e) => {
           const id = e.currentTarget.getAttribute("data-book_toggle");
-          const b = allRecords.find(r => r && r.record_type === "booking" && r.__backendId === bookingData.__backendId) || bookingData;
-          if (booking) renderAdminEditForm(booking);
+const booking = allRecords.find(r => 
+  r && 
+  r.record_type === "booking" && 
+  String(r.__backendId) === String(id)
+);
+if (booking) renderAdminEditForm(booking);
         });
       });
     }
