@@ -728,7 +728,7 @@
         const loginRes = await window.dataSdk.login(email, passwordHash);
         if (loginRes.isOk) {
           showMessage(messageContainer, "สมัครสมาชิกสำเร็จ และเข้าสู่ระบบแล้ว!", "success");
-          setTimeout(() => , 600);
+          setTimeout(() => renderDashboard(), 600);
         } else {
           showMessage(messageContainer, "สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ", "success");
           setTimeout(() => renderLogin(), 900);
