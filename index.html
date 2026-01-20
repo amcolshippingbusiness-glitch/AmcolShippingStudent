@@ -459,9 +459,14 @@
     }
 
     function getUserRecords() {
-      if (!currentUser) return [];
-      return allRecords.filter(r => r.record_type === 'booking' && r.user_id === currentUser.user_id);
-    }
+  if (!currentUser) return [];
+  const myId = String(currentUser.user_id || currentUser.userid || '');
+  return allRecords.filter(r => {
+    if (r.record_type !== 'booking') return false;
+    const rid = String(r.user_id || r.userid || '');
+    return rid === myId;
+  });
+}
 
     function calculateUserProgress(userBookings) {
       const passedExams = userBookings.filter(b => b.oral_result === 'pass').length;
@@ -1204,9 +1209,11 @@
       `;
 
       document.getElementById('logout-btn').addEventListener('click', () => {
-        currentUser = null;
-        renderLanding();
-      });
+  isAdminMode = false;
+  currentUser = null;
+  renderLanding();
+});
+
 
       document.getElementById('new-exam-btn').addEventListener('click', renderChapterSelection);
       
