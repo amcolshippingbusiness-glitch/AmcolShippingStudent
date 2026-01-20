@@ -44,47 +44,66 @@
     // ====== (A) Google Sheets WebApp URL (ต้องใส่ของจริง) ======
     const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzGNmQ7XZQ5oyVZYqaWZPJ8LMSCMFeGoXPT835n29T2fp3xX1A1edN4TGDK72NJkRoIAg/exec";
 
-    // ====== (A) Minimal dataSdk replacement (ทำให้โค้ดเดิมของคุณทำงานต่อได้) ======
-    window.dataSdk = {
-      _handler: null,
+let AUTH_TOKEN = null;
 
-      async init(handler) {
-        this._handler = handler;
-        const res = await this._call("list", {});
-        if (res && res.isOk && this._handler && typeof this._handler.onDataChanged === "function") {
-          this._handler.onDataChanged(res.data || []);
-        }
-        return { isOk: !!(res && res.isOk) };
-      },
+window.dataSdk = {
+  _handler: null,
 
-      async create(record) {
-        const res = await this._call("create", { record });
-        if (res && res.isOk) await this._refresh();
-        return { isOk: !!(res && res.isOk) };
-      },
+  async init(handler) {
+    this._handler = handler;
+    // ไม่ดึง list จนกว่าจะมี token
+    if (AUTH_TOKEN) await this._refresh();
+    return { isOk: true };
+  },
 
-      async update(record) {
-        const res = await this._call("update", { record });
-        if (res && res.isOk) await this._refresh();
-        return { isOk: !!(res && res.isOk) };
-      },
+  async login(email, password_hash) {
+    const res = await this._call("login", { email, password_hash });
+    if (res && res.isOk && res.token && res.user) {
+      AUTH_TOKEN = res.token;
+      await this._refresh();
+      return { isOk: true, user: res.user, isAdmin: !!res.isAdmin };
+    }
+    return { isOk: false, error: (res && res.error) ? res.error : "Login failed" };
+  },
 
-      async _refresh() {
-        const res = await this._call("list", {});
-        if (res && res.isOk && this._handler && typeof this._handler.onDataChanged === "function") {
-          this._handler.onDataChanged(res.data || []);
-        }
-      },
+  logout() {
+    AUTH_TOKEN = null;
+  },
 
-      async _call(action, payload) {
-        try {
-          const r = await fetch(GAS_WEBAPP_URL, {
-            method: "POST",
-            // สำคัญ: ใช้ text/plain เพื่อเลี่ยง CORS preflight
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({ action, ...payload }),
-            redirect: "follow"
-          });
+  async create(record) {
+    const res = await this._call("create", { record });
+    if (res && res.isOk && AUTH_TOKEN) await this._refresh();
+    return res;
+  },
+
+  async update(record) {
+    const res = await this._call("update", { record });
+    if (res && res.isOk && AUTH_TOKEN) await this._refresh();
+    return res;
+  },
+
+  async _refresh() {
+    const res = await this._call("list", {});
+    if (res && res.isOk && this._handler && typeof this._handler.onDataChanged === "function") {
+      this._handler.onDataChanged(res.data || []);
+    }
+  },
+
+  async _call(action, payload) {
+    const bodyObj = { action, ...payload };
+    if (AUTH_TOKEN) bodyObj.token = AUTH_TOKEN;
+
+    const r = await fetch(GAS_WEBAPP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(bodyObj),
+      redirect: "follow"
+    });
+    const text = await r.text();
+    try { return JSON.parse(text); }
+    catch { return { isOk: false, error: "Non-JSON response" }; }
+  }
+};
 
           const text = await r.text();
           try {
@@ -999,12 +1018,12 @@
           showMessage(messageContainer, 'รหัสผ่านไม่ตรงก��น', 'error');
           return;
         }
-        
-        const existingUser = allRecords.find(r => r.record_type === 'user' && r.email === email);
-        if (existingUser) {
-          showMessage(messageContainer, 'อีเมลนี้ถูกใช้งานแล้ว', 'error');
-          return;
-        }
+       // const existingUser = allRecords.find(r => r.record_type === 'user' && r.email === email);
+// if (existingUser) {
+//   showMessage(messageContainer, 'อีเมลนี้ถูกใช้งานแล้ว', 'error');
+//   return;
+// }
+
         
         if (allRecords.length >= 999) {
           showMessage(messageContainer, 'ระบบเต็ม', 'error');
@@ -1012,6 +1031,17 @@
         }
         
         const passwordHash = await simpleHash(password);
+
+const result = await window.dataSdk.login(email, passwordHash);
+
+if (result.isOk) {
+  currentUser = result.user;
+  showMessage(messageContainer, 'เข้าสู่ระบบสำเร็จ!', 'success');
+  setTimeout(() => renderDashboard(), 1000);
+} else {
+  showMessage(messageContainer, result.error || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง', 'error');
+}
+
         
         const newUser = {
           record_type: 'user',
@@ -1023,13 +1053,13 @@
         };
         
         const result = await window.dataSdk.create(newUser);
-        
-        if (result.isOk) {
-          showMessage(messageContainer, 'สมัครสมาชิกสำเร็จ!', 'success');
-          setTimeout(() => renderLogin(), 1500);
-        } else {
-          showMessage(messageContainer, 'เกิดข้อผิดพลาด', 'error');
-        }
+
+if (result.isOk) {
+  showMessage(messageContainer, 'สมัครสมาชิกสำเร็จ!', 'success');
+  setTimeout(() => renderLogin(), 1500);
+} else {
+  showMessage(messageContainer, result.error || 'เกิดข้อผิดพลาด', 'error');
+}
       });
     }
 
