@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบ Shipping Business ออนไลน์</title>
 
-  <script src="/_sdk/data_sdk.js"></script>
-  <script src="/_sdk/element_sdk.js"></script>
+  <!-- <script src="/_sdk/data_sdk.js"></script> -->
+<!-- <script src="/_sdk/element_sdk.js"></script> -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
@@ -566,7 +566,7 @@
   if (!currentUser) return [];
   const myId = String(currentUser.user_id || currentUser.userid || "");
   return allRecords.filter(r =>
-    r && r.record_type === "booking" && String(r.user_id || "") === myId
+    r && r.record_type === "booking" && String(r.user_id || r.userid || "") === myId
   );
 }
 
@@ -575,8 +575,9 @@
 }
 
     function getUserById(userId) {
-  return allRecords.find(r => r && r.record_type === "user" && String(r.user_id || "") === String(userId));
+  return allRecords.find(r => r && r.record_type === "user" && String(r.user_id) === String(userId));
 }
+
 
     // =========================================================
     // (I) UI: Landing
@@ -727,7 +728,7 @@
         const loginRes = await window.dataSdk.login(email, passwordHash);
         if (loginRes.isOk) {
           showMessage(messageContainer, "สมัครสมาชิกสำเร็จ และเข้าสู่ระบบแล้ว!", "success");
-          setTimeout(() => renderDashboard(), 600);
+          setTimeout(() => , 600);
         } else {
           showMessage(messageContainer, "สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ", "success");
           setTimeout(() => renderLogin(), 900);
@@ -802,7 +803,7 @@
         const res = await window.dataSdk.login(email, passwordHash);
         if (res.isOk) {
           showMessage(messageContainer, "เข้าสู่ระบบสำเร็จ!", "success");
-          setTimeout(() => renderDashboard(), 600);
+          setTimeout(() => , 600);
         } else {
           showMessage(messageContainer, res.error || "อีเมลหรือรหัสผ่านไม่ถูกต้อง", "error");
         }
@@ -984,11 +985,19 @@
     // (N) Booking detail (User read-only)
     // =========================================================
     function renderBookingDetail() {
-      currentView = "booking_detail";
+  if (!bookingData || !bookingData.__backendId) {
+    // ถ้าเข้าหน้านี้ทั้งที่ไม่มี booking ที่เลือกไว้ ให้กลับ dashboard
+    renderDashboard();
+    return;
+  }
 
-      const b = allRecords.find(r => r && r.type === "booking" && r.__backendId === bookingData.__backendId) || bookingData;
-      bookingData = b;
+  currentView = "booking_detail";
 
+  const b =
+    allRecords.find(r => r && r.record_type === "booking" && String(r.__backendId) === String(bookingData.__backendId))
+    || bookingData;
+
+  bookingData = b;
       const resultText = {
         "pass": "✅ ผ่าน",
         "fail": "❌ ไม่ผ่าน",
