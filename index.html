@@ -10,9 +10,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    body { box-sizing: border-box; }
-    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
-    * { font-family: 'Sarabun', sans-serif; }
+     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+  body { box-sizing: border-box; }
+  * { font-family: 'Sarabun', sans-serif; }
 
     .card-hover { transition: all 0.3s ease; }
     .card-hover:hover {
@@ -803,7 +803,7 @@ localStorage.setItem(LS_ADMIN, String(!!isAdmin));
         const res = await window.dataSdk.login(email, passwordHash);
         if (res.isOk) {
           showMessage(messageContainer, "เข้าสู่ระบบสำเร็จ!", "success");
-          setTimeout(() => , 600);
+          setTimeout(() => renderDashboard(), 600);
         } else {
           showMessage(messageContainer, res.error || "อีเมลหรือรหัสผ่านไม่ถูกต้อง", "error");
         }
@@ -986,30 +986,30 @@ localStorage.setItem(LS_ADMIN, String(!!isAdmin));
     // =========================================================
     function renderBookingDetail() {
   if (!bookingData || !bookingData.__backendId) {
-    // ถ้าเข้าหน้านี้ทั้งที่ไม่มี booking ที่เลือกไว้ ให้กลับ dashboard
     renderDashboard();
     return;
   }
 
   currentView = "booking_detail";
 
-  if (loginRes.isOk) {
-          showMessage(messageContainer, "สมัครสมาชิกสำเร็จ และเข้าสู่ระบบแล้ว!", "success");
-          setTimeout(() => renderDashboard(), 600);
-  r && 
-  r.record_type === "booking" && 
-  r.__backendId && 
-  String(r.__backendId) === String(bookingData.__backendId)
-) || bookingData;
+  // ดึง booking ล่าสุดจาก allRecords เผื่อมีการ refresh แล้ว
+  const b =
+    allRecords.find(r =>
+      r &&
+      r.record_type === "booking" &&
+      r.__backendId &&
+      String(r.__backendId) === String(bookingData.__backendId)
+    ) || bookingData;
 
   bookingData = b;
-      const resultText = {
-        "pass": "✅ ผ่าน",
-        "fail": "❌ ไม่ผ่าน",
-        "retest": "⚠️ สอบซ่อม",
-        "": "⏳ รอผล",
-        null: "⏳ รอผล"
-      };
+
+  const resultText = {
+    pass: "✅ ผ่าน",
+    fail: "❌ ไม่ผ่าน",
+    retest: "⚠️ สอบซ่อม",
+    "": "⏳ รอผล",
+    null: "⏳ รอผล"
+  };
 
       const app = document.getElementById("app");
       app.innerHTML = `
@@ -1059,7 +1059,7 @@ localStorage.setItem(LS_ADMIN, String(!!isAdmin));
       `;
 
       document.getElementById("back-dashboard").addEventListener("click", renderDashboard);
-      setupAdminButton();
+  setupAdminButton();
     }
 
     // =========================================================
@@ -1240,28 +1240,31 @@ localStorage.setItem(LS_ADMIN, String(!!isAdmin));
 
         const messageContainer = document.getElementById("message-container");
 
-        const newBooking = {
-          record_type: "booking",
-          booking_id: String(Date.now()),
+        const myId = String(currentUser?.user_id || currentUser?.userid || "");
 
-          // ใช้ topicId/topicName/subtopicName ตามที่ server รองรับ
-          topicId: parseInt(selectedChapter.number, 10),
-          topicName: selectedChapter.name,
-          subtopicName: selectedSubtopic.name,
-          examType: "จองสอบ",
+const newBooking = {
+  record_type: "booking",
+  booking_id: String(Date.now()),
 
-          exam_date: document.getElementById("exam-date").value,
-          examiner_name: document.getElementById("examiner-name").value,
+  user_id: myId,                       // ✅ สำคัญมาก
+  fullName: currentUser?.fullName || currentUser?.name || "", // ✅ ให้ admin เห็นชื่อ
+  email: currentUser?.email || "",     // ✅ ให้ admin เห็นอีเมล
 
-          // ฟิลด์ผลสอบ (ว่างไว้)
-          oral_result: "",
-          score: null,
-          examiner_note: "",
+  topicId: parseInt(selectedChapter.number, 10),
+  topicName: selectedChapter.name,
+  subtopicName: selectedSubtopic.name,
+  examType: "จองสอบ",
 
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
+  exam_date: document.getElementById("exam-date").value,
+  examiner_name: document.getElementById("examiner-name").value,
 
+  oral_result: "",
+  score: null,
+  examiner_note: "",
+
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString()
+};
         const res = await window.dataSdk.create(newBooking);
         if (res && res.isOk) {
           showMessage(messageContainer, "จองสอบสำเร็จ!", "success");
