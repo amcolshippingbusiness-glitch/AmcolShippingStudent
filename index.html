@@ -504,8 +504,8 @@
         const res = await this._call("create", { record });
         // ถ้าเป็น booking แล้วสำเร็จ -> refresh
         if (res && res.isOk && AUTH_TOKEN && record && record.record_type !== "user") {
-          await this._refresh();
-        }
+  await this._refresh();
+}
         return res;
       },
 
@@ -563,20 +563,20 @@
     // (H) Query helpers (records)
     // =========================================================
     function getMyBookings() {
-      if (!currentUser) return [];
-      const myId = String(currentUser.user_id || currentUser.userid || "");
-      return allRecords.filter(r =>
-        r && r.type === "booking" && String(r.user_id || r.userid || "") === myId
-      );
-    }
+  if (!currentUser) return [];
+  const myId = String(currentUser.user_id || currentUser.userid || "");
+  return allRecords.filter(r =>
+    r && r.record_type === "booking" && String(r.user_id || "") === myId
+  );
+}
 
     function getAllBookingsAdmin() {
-      return allRecords.filter(r => r && r.type === "booking");
-    }
+  return allRecords.filter(r => r && r.record_type === "booking");
+}
 
     function getUserById(userId) {
-      return allRecords.find(r => r && r.record_type === "user" && String(r.user_id) === String(userId));
-    }
+  return allRecords.find(r => r && r.record_type === "user" && String(r.user_id || "") === String(userId));
+}
 
     // =========================================================
     // (I) UI: Landing
@@ -969,7 +969,7 @@
       document.querySelectorAll(".view-booking-btn").forEach(btn => {
         btn.addEventListener("click", (e) => {
           const id = e.currentTarget.dataset.bookingId;
-          const booking = allRecords.find(r => r && r.type === "booking" && String(r.__backendId) === String(id));
+          const booking = allRecords.find(r => r && r.record_type === "booking" && String(r.__backendId) === String(id));
           if (booking) {
             bookingData = booking;
             renderBookingDetail();
@@ -1267,7 +1267,7 @@
       if (!isAdminUser) return renderDashboard();
       currentView = "admin_dashboard";
 
-      const bookings = (data.data || []).filter(r => r.record_type === "booking");
+      const bookings = getAllBookingsAdmin();
 
       const app = document.getElementById("app");
       app.innerHTML = `
@@ -1356,7 +1356,7 @@
       document.querySelectorAll(".admin-edit-btn").forEach(btn => {
         btn.addEventListener("click", (e) => {
           const id = e.currentTarget.getAttribute("data-book_toggle");
-          const booking = allRecords.find(r => r && r.type === "booking" && String(r.__backendId) === String(id));
+          const b = allRecords.find(r => r && r.record_type === "booking" && r.__backendId === bookingData.__backendId) || bookingData;
           if (booking) renderAdminEditForm(booking);
         });
       });
