@@ -993,7 +993,9 @@ localStorage.setItem(LS_ADMIN, String(!!isAdmin));
 
   currentView = "booking_detail";
 
-  const b = allRecords.find(r => 
+  if (loginRes.isOk) {
+          showMessage(messageContainer, "สมัครสมาชิกสำเร็จ และเข้าสู่ระบบแล้ว!", "success");
+          setTimeout(() => renderDashboard(), 600);
   r && 
   r.record_type === "booking" && 
   r.__backendId && 
